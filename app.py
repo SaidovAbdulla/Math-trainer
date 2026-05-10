@@ -60,15 +60,16 @@ def generate_problem(selected_mode, selected_op):
     display = [str(v) for v in vals]
     display[mask_idx] = "❓"
     
-    # Формируем строку примера (убираем лишние кавычки списка)
-    clean_display = [str(v) for v in display]
-    problem_str = f"{clean_display[0]} {op} {clean_display[1]} = {clean_display[2]}"
+    problem_str = f"{display[0]} {op} {display[1]} = {display[2]}"
     
     return problem_str, correct
 
 # --- Игровой процесс ---
 if not st.session_state.game_over:
     if st.session_state.step < total_count:
+        # Прогресс-бар для наглядности
+        st.progress(st.session_state.step / total_count)
+        
         if st.session_state.current_ex is None:
             st.session_state.current_ex = generate_problem(mode, op_choice)
             st.session_state.answered = False
@@ -79,15 +80,20 @@ if not st.session_state.game_over:
 
         if not st.session_state.answered:
             with st.form(key=f"form_{st.session_state.step}"):
-                user_val = st.number_input("Введи число:", value=0, step=1)
+                # ВАЖНО: value=None делает поле пустым при старте
+                user_val = st.number_input("Введи число:", value=None, step=1, placeholder="Пиши ответ здесь...")
+                
                 if st.form_submit_button("Подтвердить ⚡"):
-                    st.session_state.answered = True
-                    if user_val == correct_ans:
-                        st.session_state.score += 1
-                        st.session_state.feedback = "✅ **Верно!** Отличная работа! 🎯"
+                    if user_val is not None:
+                        st.session_state.answered = True
+                        if user_val == correct_ans:
+                            st.session_state.score += 1
+                            st.session_state.feedback = "✅ **Верно!** Отличная работа! 🎯"
+                        else:
+                            st.session_state.feedback = f"❌ **Неверно.** Правильный ответ: {correct_ans} 🙈"
+                        st.rerun()
                     else:
-                        st.session_state.feedback = f"❌ **Неверно.** Правильный ответ: {correct_ans} 🙈"
-                    st.rerun()
+                        st.warning("⚠️ Пожалуйста, введи число перед подтверждением!")
         else:
             st.markdown(f"### {st.session_state.feedback}")
             if st.button("Дальше ⏭️"):

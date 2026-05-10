@@ -17,7 +17,7 @@ st.title("🧠 Brain Gum 🧠")
 with st.sidebar:
     st.header("🛠 Настройки")
     
-    mode = st.selectbox("Сложность:", [
+    mode = st.selectbox("Сложность (разрядность):", [
         "😄 Легкий уровень", 
         "😓 Средний уровень", 
         "😡 Продвинутый уровень", 
@@ -67,7 +67,7 @@ def generate_problem(selected_mode, selected_op):
 # --- Игровой процесс ---
 if not st.session_state.game_over:
     if st.session_state.step < total_count:
-        # Прогресс-бар для наглядности
+        # Прогресс-бар
         st.progress(st.session_state.step / total_count)
         
         if st.session_state.current_ex is None:
@@ -80,11 +80,14 @@ if not st.session_state.game_over:
 
         if not st.session_state.answered:
             with st.form(key=f"form_{st.session_state.step}"):
-                # ВАЖНО: value=None делает поле пустым при старте
-                user_val = st.number_input("Введи число:", value=None, step=1, placeholder="Пиши ответ здесь...")
+                # Используем text_input БЕЗ кнопок +/-
+                user_input = st.text_input("Введи число:", value="", placeholder="Пиши ответ здесь...")
                 
                 if st.form_submit_button("Подтвердить ⚡"):
-                    if user_val is not None:
+                    # Проверка на число (учитывая возможный минус)
+                    clean_input = user_input.strip()
+                    if clean_input.lstrip('-').isdigit():
+                        user_val = int(clean_input)
                         st.session_state.answered = True
                         if user_val == correct_ans:
                             st.session_state.score += 1
@@ -92,8 +95,10 @@ if not st.session_state.game_over:
                         else:
                             st.session_state.feedback = f"❌ **Неверно.** Правильный ответ: {correct_ans} 🙈"
                         st.rerun()
+                    elif clean_input == "":
+                        st.warning("⚠️ Сначала напиши ответ!")
                     else:
-                        st.warning("⚠️ Пожалуйста, введи число перед подтверждением!")
+                        st.error("🔢 Вводить можно только цифры!")
         else:
             st.markdown(f"### {st.session_state.feedback}")
             if st.button("Дальше ⏭️"):
@@ -107,7 +112,8 @@ if not st.session_state.game_over:
 # --- Финал ---
 else:
     st.balloons()
-    st.header("🥳 Тренировка 🧠 Brain Gum 🧠 окончена!")
+    # Тот самый пробел в заголовке
+    st.header("🥳 Тренировка  🧠 Brain Gum 🧠  окончена!")
     
     percent = (st.session_state.score / total_count) * 100
     if percent == 100: 
@@ -121,6 +127,7 @@ else:
     else: 
         stars, rank = "⭐", "Не сдавайся, попробуй еще раз! 🎒💡"
 
+    st.write("")
     st.subheader(f"Твой рейтинг: {stars}")
     st.write(f"### {rank}")
     st.metric("Точных попаданий", f"{st.session_state.score} / {total_count}")
